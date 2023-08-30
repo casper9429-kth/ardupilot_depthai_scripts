@@ -6,9 +6,13 @@ import numpy as np
 from time import sleep
 from pipeline import *
 
+
 # Pipeline is defined, now we can connect to the device
 with dai.Device(create_pipeline(), usb2Mode=False) as device:
-
+    # Enable IR lasers and set them the the shortest range and lowest power
+    device.setIrLaserDotProjectorBrightness(765)
+    device.setIrFloodLightBrightness(1500)   
+    
     # Output queue will be used to get the depth frames from the outputs defined above
     spatialQueue = device.getOutputQueue(name="spatialData", maxSize=2, blocking=False)
     depthQueue = device.getOutputQueue(name="depth", maxSize=2, blocking=False)
@@ -23,7 +27,7 @@ with dai.Device(create_pipeline(), usb2Mode=False) as device:
         for spatialData in spatialDatas:
             roi = spatialData.config.roi
             roi = roi.denormalize(width=depthFrame.shape[1], height=depthFrame.shape[0])
-            avgDepth = spatialData.depthAverage # same as Z coordinate
+            avgDepth = spatialData.depthAverage # same as Z coordinate # spatialData.depthMin
             avgDepthPixelCount = spatialData.depthAveragePixelCount
             depthConfidence = avgDepthPixelCount/roi.area()
             # print(f"Depth confidence: {int(depthConfidence*100)}%")
@@ -37,7 +41,7 @@ with dai.Device(create_pipeline(), usb2Mode=False) as device:
         depthFrameColor = cv2.normalize(depthFrame, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
         depthFrameColor = cv2.equalizeHist(depthFrameColor)
         depthFrameColor = cv2.applyColorMap(depthFrameColor, cv2.COLORMAP_JET)
-
+        
         color = (255, 255, 255)
         for spatialData in spatialDatas:
             roi = spatialData.config.roi

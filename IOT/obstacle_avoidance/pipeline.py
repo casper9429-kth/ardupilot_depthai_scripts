@@ -12,6 +12,8 @@ def create_pipeline():
     # Start defining a pipeline
     pipeline = dai.Pipeline()
 
+    
+
     # Create color camera
     camRgb = pipeline.createColorCamera()
     camRgb.setPreviewSize(300, 300)
@@ -30,6 +32,9 @@ def create_pipeline():
     stereo = pipeline.createStereoDepth()
     stereo.initialConfig.setConfidenceThreshold(130)
     stereo.initialConfig.setLeftRightCheckThreshold(150)
+    # Enable median filtering
+    stereo.setMedianFilter(dai.StereoDepthProperties.MedianFilter.KERNEL_7x7)
+    
     # Setting node configs
     lrcheck = True
     subpixel = True
@@ -52,24 +57,29 @@ def create_pipeline():
     config.depthThresholds.upperThreshold = 15000
     config.calculationAlgorithm = dai.SpatialLocationCalculatorAlgorithm.MIN
 
-    # Set ROI
-    for i in range(3):
-        topLeft = dai.Point2f((i%3)*0.3, 0.20)
-        bottomRight = dai.Point2f(((i%3)+1)*0.3, (int(i/3) + 1)*0.3)
-        config.roi = dai.Rect(topLeft, bottomRight)
-        spatialLocationCalculator.initialConfig.addROI(config)
+    
+    # Create NxM roi grid
+    N = 5 # Number of cells in x direction
+    M = 5 # Number of cells in y direction
+    safty_margin = 0.4 # add a safty margin to the roi on the edges(in percent) of total cell size
+    for n in range(N):
+        for m in range(M):
+            # calulate safty margin 
+            left_margin = safty_margin*(1/N) if n == 0 else 0
+            right_margin = safty_margin*(1/N) if n == N-1 else 0
+            upper_margin = safty_margin*(1/M) if m == 0 else 0
+            lower_margin = safty_margin*(1/M) if m == M-1 else 0
 
-    for i in range(3,6):
-        topLeft = dai.Point2f((i%3)*0.3, (int(i/3))*0.3)
-        bottomRight = dai.Point2f(((i%3)+1)*0.3, (int(i/3) + 1)*0.3)
-        config.roi = dai.Rect(topLeft, bottomRight)
-        spatialLocationCalculator.initialConfig.addROI(config)
+            # Define ROI for each cell            
+            topLeft = dai.Point2f((n%N)*1/N + left_margin, (m%M)*1/M + upper_margin)
+            bottomRight = dai.Point2f(((n%N)+1)*1/N - right_margin, ((m%M)+1)*1/M - lower_margin)
+            # print(f"topLeft: {topLeft}, bottomRight: {bottomRight}")
+            config.roi = dai.Rect(topLeft, bottomRight)
+            # Add the ROI 
+            spatialLocationCalculator.initialConfig.addROI(config)
+            
+    
 
-    for i in range(6,9):
-        topLeft = dai.Point2f((i%3)*0.3, (int(i/3))*0.3)
-        bottomRight = dai.Point2f(((i%3)+1)*0.3, 0.8)
-        config.roi = dai.Rect(topLeft, bottomRight)
-        spatialLocationCalculator.initialConfig.addROI(config)
 
     # Send depth frames to the host
     xoutDepth = pipeline.createXLinkOut()

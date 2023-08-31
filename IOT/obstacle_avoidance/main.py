@@ -13,6 +13,8 @@ with dai.Device(create_pipeline(), usb2Mode=False) as device:
     device.setIrLaserDotProjectorBrightness(765)
     device.setIrFloodLightBrightness(1500)   
     
+    # set with of 
+    
     # Output queue will be used to get the depth frames from the outputs defined above
     spatialQueue = device.getOutputQueue(name="spatialData", maxSize=2, blocking=False)
     depthQueue = device.getOutputQueue(name="depth", maxSize=2, blocking=False)

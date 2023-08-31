@@ -17,6 +17,7 @@ def create_pipeline():
     # Create color camera
     camRgb = pipeline.createColorCamera()
     camRgb.setPreviewSize(300, 300)
+
     camRgb.setInterleaved(False)
 
     # Create mono cameras for StereoDepth
@@ -32,9 +33,18 @@ def create_pipeline():
     stereo = pipeline.createStereoDepth()
     stereo.initialConfig.setConfidenceThreshold(130)
     stereo.initialConfig.setLeftRightCheckThreshold(150)
+
     # Enable median filtering
     stereo.setMedianFilter(dai.StereoDepthProperties.MedianFilter.KERNEL_7x7)
-    
+
+    # # Enable extended disparity range
+    # stereo.setLeftRightCheck(False)
+    # # Closer-in minimum depth, disparity range is doubled:
+    # stereo.setExtendedDisparity(False)
+    # Better accuracy for longer distance, fractional disparity 32-levels:
+    stereo.setSubpixel(True)    
+
+
     # Setting node configs
     lrcheck = True
     subpixel = True
